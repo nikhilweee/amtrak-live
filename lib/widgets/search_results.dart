@@ -59,7 +59,6 @@ class SearchResults extends StatelessWidget {
 
   Widget _buildTrainInfo(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -108,7 +107,10 @@ class SearchResults extends StatelessWidget {
               child: ListTile(
                 leading: Builder(
                   builder: (context) {
-                    final (backgroundColor, textColor) = _getChipColors(context, stop);
+                    final (backgroundColor, textColor) = _getChipColors(
+                      context,
+                      stop,
+                    );
                     return Chip(
                       label: Text(
                         stop.stationCode,
@@ -127,13 +129,13 @@ class SearchResults extends StatelessWidget {
                   stop.stationName,
                   // style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
-                subtitle: stop.status != null
+                subtitle: stop.departure?.status != null
                     ? Text(
-                        stop.displayMessage ?? stop.status!,
+                        stop.departure?.displayMessage ?? stop.departure!.status,
                         style: TextStyle(
                           // fontSize: 12,
                           // fontWeight: FontWeight.w500,
-                          color: _getStatusColor(stop.status!),
+                          color: _getStatusColor(stop.departure!.status),
                         ),
                       )
                     : null,
@@ -141,15 +143,15 @@ class SearchResults extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (stop.scheduledTime != null)
+                    if (stop.scheduledDepartureTime != null)
                       Text(
-                        'SCH: ${DateFormat('h:mm a').format(stop.scheduledTime!)}',
+                        'SCH: ${DateFormat('h:mm a').format(stop.scheduledDepartureTime!)}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    if (stop.actualTime != null)
+                    if (stop.actualDepartureTime != null)
                       Text(
-                        '${stop.departuerDateTimeType == 'ACTUAL' ? 'ACT' : 'EST'}: '
-                        '${DateFormat('h:mm a').format(stop.actualTime!)}',
+                        '${stop.departure?.dateTimeType == 'ACTUAL' ? 'ACT' : 'EST'}: '
+                        '${DateFormat('h:mm a').format(stop.actualDepartureTime!)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -174,8 +176,11 @@ class SearchResults extends StatelessWidget {
     return Colors.grey;
   }
 
-  (Color background, Color text) _getChipColors(BuildContext context, TrainStop stop) {
-    final dateTimeType = stop.departuerDateTimeType.toUpperCase();
+  (Color background, Color text) _getChipColors(
+    BuildContext context,
+    TrainStop stop,
+  ) {
+    final dateTimeType = stop.departure?.dateTimeType?.toUpperCase() ?? 'ESTIMATE';
     if (dateTimeType == 'ACTUAL') {
       // ACTUAL - error color scheme for confirmed times
       return (

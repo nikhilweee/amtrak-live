@@ -1,63 +1,130 @@
 // Amtrak Train Data Models
 import 'package:timezone/timezone.dart' as tz;
 
+class ArrivalDeparture {
+  final String scheduleDateTime;
+  final String status;
+  final String displayStatus;
+  final String displayMessage;
+  final String? dateTimeType;
+  final String? dateTime;
+  final String? delay;
+  final String asOf;
+
+  const ArrivalDeparture({
+    required this.scheduleDateTime,
+    required this.status,
+    required this.displayStatus,
+    required this.displayMessage,
+    this.dateTimeType,
+    this.dateTime,
+    this.delay,
+    required this.asOf,
+  });
+
+  factory ArrivalDeparture.fromJson(Map<String, dynamic> json) {
+    final schedule = json['schedule'];
+    final statusInfo = json['statusInfo'];
+
+    return ArrivalDeparture(
+      scheduleDateTime: schedule['dateTime'],
+      status: statusInfo['status'],
+      displayStatus: statusInfo['displayStatus'],
+      displayMessage: statusInfo['displayMessage'],
+      dateTimeType: statusInfo?['dateTimeType'],
+      dateTime: statusInfo?['dateTime'],
+      delay: statusInfo?['delay'],
+      asOf: statusInfo['asOf'],
+    );
+  }
+
+  DateTime get scheduledTime {
+    return DateTime.parse(scheduleDateTime);
+  }
+
+  DateTime? get actualTime {
+    if (dateTime == null) return null;
+    return DateTime.parse(dateTime!);
+  }
+
+  DateTime get asOfTime {
+    return DateTime.parse(asOf);
+  }
+}
+
 class TrainStop {
   final String id;
   final int stopNumber;
   final String stationCode;
   final String stationName;
+  final String? stationFacility;
   final String stationTimeZone;
-  final String? scheduledDeparture;
-  final String? actualDeparture;
-  final String? status;
-  final String? displayMessage;
-  final String departuerDateTimeType;
+  final ArrivalDeparture? arrival;
+  final ArrivalDeparture? departure;
 
   const TrainStop({
     required this.id,
     required this.stopNumber,
     required this.stationCode,
     required this.stationName,
+    this.stationFacility,
     required this.stationTimeZone,
-    this.scheduledDeparture,
-    this.actualDeparture,
-    this.status,
-    this.displayMessage,
-    this.departuerDateTimeType = 'ESTIMATE',
+    this.arrival,
+    this.departure,
   });
 
   factory TrainStop.fromJson(Map<String, dynamic> json) {
     final station = json['station'];
-    final departure = json['departure'];
+    final arrivalJson = json['arrival'];
+    final departureJson = json['departure'];
 
     return TrainStop(
       id: json['id'],
       stopNumber: json['stopNumber'],
       stationCode: station['code'],
       stationName: station['name'],
+      stationFacility: station?['facility'],
       stationTimeZone: station['timeZone'],
-      scheduledDeparture: departure?['schedule']?['dateTime'],
-      actualDeparture: departure?['statusInfo']?['dateTime'],
-      status: departure?['statusInfo']?['status'],
-      displayMessage: departure?['statusInfo']?['displayMessage'],
-      departuerDateTimeType:
-          departure?['statusInfo']?['dateTimeType'] ?? 'ESTIMATE',
+      arrival: arrivalJson != null
+          ? ArrivalDeparture.fromJson(arrivalJson)
+          : null,
+      departure: departureJson != null
+          ? ArrivalDeparture.fromJson(departureJson)
+          : null,
     );
   }
 
-  DateTime? get scheduledTime {
-    if (scheduledDeparture == null) return null;
+  DateTime? get scheduledArrivalTime {
+    if (arrival == null) return null;
     // Parse the datetime with timezone offset
-    final utcDateTime = DateTime.parse(scheduledDeparture!);
+    final utcDateTime = arrival!.scheduledTime;
     // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);
   }
 
-  DateTime? get actualTime {
-    if (actualDeparture == null) return null;
+  DateTime? get actualArrivalTime {
+    if (arrival?.actualTime == null) return null;
     // Parse the datetime with timezone offset
-    final utcDateTime = DateTime.parse(actualDeparture!);
+    final utcDateTime = arrival!.actualTime!;
+    // Convert to the station's timezone
+    final location = tz.getLocation(stationTimeZone);
+    return tz.TZDateTime.from(utcDateTime, location);
+  }
+
+  DateTime? get scheduledDepartureTime {
+    if (departure == null) return null;
+    // Parse the datetime with timezone offset
+    final utcDateTime = departure!.scheduledTime;
+    // Convert to the station's timezone
+    final location = tz.getLocation(stationTimeZone);
+    return tz.TZDateTime.from(utcDateTime, location);
+  }
+
+  DateTime? get actualDepartureTime {
+    if (departure?.actualTime == null) return null;
+    // Parse the datetime with timezone offset
+    final utcDateTime = departure!.actualTime!;
     // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);

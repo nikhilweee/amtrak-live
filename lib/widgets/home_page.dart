@@ -73,7 +73,11 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Search
-            SearchForm(onSearch: _searchTrain, isLoading: _isLoading),
+            SearchForm(
+              onSearch: _searchTrain,
+              isLoading: _isLoading,
+              hasResults: _trainData != null || _errorMessage != null,
+            ),
 
             // Results
             Expanded(
