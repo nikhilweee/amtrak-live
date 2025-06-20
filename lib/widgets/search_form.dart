@@ -111,7 +111,7 @@ class _SearchFormState extends State<SearchForm> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
             // Always show the header (collapsed state info with expand/collapse button)
@@ -135,42 +135,45 @@ class _SearchFormState extends State<SearchForm> {
   }
 
   Widget _buildHeader() {
-    return Row(
-      children: [
-        // Train info
-        const Icon(Icons.train, size: 20),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            _isExpanded
-                ? 'Search Trains'
-                : (_trainNumberController.text.isNotEmpty
-                    ? 'Train ${_trainNumberController.text}'
-                    : 'No train selected'),
-            style: Theme.of(context).textTheme.titleMedium,
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0),
+      child: Row(
+        children: [
+          // Train info
+          const Icon(Icons.train, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _isExpanded
+                  ? 'Search Train'
+                  : (_trainNumberController.text.isNotEmpty
+                      ? 'Train ${_trainNumberController.text}'
+                      : 'No train selected'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
-        ),
-    
-        // Date info (only show when collapsed)
-        if (!_isExpanded && _selectedDate != null) ...[
-          const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-          const SizedBox(width: 4),
-          Text(
-            DateFormat('MMM d').format(_selectedDate!),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+      
+          // Date info (only show when collapsed)
+          if (!_isExpanded && _selectedDate != null) ...[
+            const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+            const SizedBox(width: 4),
+            Text(
+              DateFormat('MMM d').format(_selectedDate!),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            ),
+            const SizedBox(width: 12),
+          ],
+      
+          // Expand/Collapse arrow indicator
+          IconButton(
+            onPressed: _isExpanded ? _collapseForm : _expandForm,
+            icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+            tooltip: _isExpanded ? 'Collapse' : 'Expand',
           ),
-          const SizedBox(width: 12),
         ],
-    
-        // Expand/Collapse arrow indicator
-        IconButton(
-          onPressed: _isExpanded ? _collapseForm : _expandForm,
-          icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
-          tooltip: _isExpanded ? 'Collapse' : 'Expand',
-        ),
-      ],
+      ),
     );
   }
 
@@ -211,7 +214,7 @@ class _SearchFormState extends State<SearchForm> {
         FilledButton.icon(
           onPressed: widget.isLoading ? null : _handleSearch,
           icon: const Icon(Icons.search),
-          label: const Text('Search Train Status'),
+          label: const Text('Search'),
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),

@@ -149,7 +149,7 @@ class TrainInfoCard extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -162,7 +162,7 @@ class TrainInfoCard extends StatelessWidget {
                       trainData.trainName,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     // Origin and destination
                     Text(
                       '${trainData.originName} → ${trainData.destinationName}',
@@ -170,7 +170,7 @@ class TrainInfoCard extends StatelessWidget {
                     ),
                     // Status message if available
                     if (trainData.statusMessage != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       Chip(
                         label: Text(
                           trainData.statusMessage!,
@@ -186,20 +186,20 @@ class TrainInfoCard extends StatelessWidget {
                     ],
                     // Show detailed messages indicator when messages are available
                     if (hasDetailedMessages) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: Colors.blue.shade700,
+                            color: Colors.blue,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'Detailed Messages',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade700,
+                              color: Colors.blue,
                             ),
                           ),
                         ],
@@ -235,10 +235,9 @@ class TrainInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(height: 20),
           ...detailedMessages.map((message) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Text(message),
             );
           }),
@@ -271,7 +270,7 @@ class StopCard extends StatelessWidget {
             highlightColor: Colors.transparent,
             splashFactory: NoSplash.splashFactory,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
                   // Leading - Station Code Chip
@@ -279,20 +278,15 @@ class StopCard extends StatelessWidget {
                     label: Text(
                       stop.stationCode,
                       style: TextStyle(
-                        fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color:
-                            stop.departure?.dateTimeType?.toUpperCase() ==
-                                'ACTUAL'
-                            ? Colors.green.shade800
-                            : Colors.blue.shade800,
+                        color: stop.isTrainArrived
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSecondary,
                       ),
                     ),
-                    backgroundColor:
-                        stop.departure?.dateTimeType?.toUpperCase() == 'ACTUAL'
-                        ? Colors.green.shade100
-                        : Colors.blue.shade100,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundColor: stop.isTrainArrived
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary,
                   ),
                   const SizedBox(width: 16),
                   // Title and Subtitle
@@ -300,10 +294,7 @@ class StopCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          stop.stationName,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
+                        Text(stop.stationName),
                         if (_buildDisplayMessage() != null) ...[
                           const SizedBox(height: 4),
                           _buildDisplayMessage()!,
@@ -315,11 +306,10 @@ class StopCard extends StatelessWidget {
                   // Trailing - Time Information
                   Builder(
                     builder: (context) {
-                      final showDeparture = _shouldShowDeparture();
-                      final scheduledTime = showDeparture
+                      final scheduledTime = stop.isTrainArrived
                           ? stop.scheduledDepartureTime
                           : stop.scheduledArrivalTime;
-                      final actualTime = showDeparture
+                      final actualTime = stop.isTrainArrived
                           ? stop.actualDepartureTime
                           : stop.actualArrivalTime;
 
@@ -329,6 +319,7 @@ class StopCard extends StatelessWidget {
                         children: [
                           if (scheduledTime != null)
                             _buildTimeChip(
+                              context,
                               DateFormat('h:mm a').format(scheduledTime),
                               isActual: false,
                             ),
@@ -336,6 +327,7 @@ class StopCard extends StatelessWidget {
                             if (scheduledTime != null)
                               const SizedBox(height: 4),
                             _buildTimeChip(
+                              context,
                               DateFormat('h:mm a').format(actualTime),
                               isActual: true,
                             ),
@@ -366,7 +358,7 @@ class StopCard extends StatelessWidget {
   }
 
   Widget? _buildDisplayMessage() {
-    final info = _shouldShowDeparture() ? stop.departure : stop.arrival;
+    final info = stop.isTrainArrived ? stop.departure : stop.arrival;
     if (info?.displayMessage == null) return null;
 
     return Text(
@@ -375,38 +367,40 @@ class StopCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeChip(String time, {required bool isActual}) {
+  Widget _buildTimeChip(
+    BuildContext context,
+    String time, {
+    required bool isActual,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isActual ? Colors.green.shade100 : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
+        color: isActual
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.secondary,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         time,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: isActual ? Colors.green.shade800 : Colors.grey.shade700,
+          color: isActual
+              ? Theme.of(context).colorScheme.onPrimary
+              : Theme.of(context).colorScheme.onSecondary,
         ),
       ),
     );
   }
 
-  // Helper methods
-  bool _shouldShowDeparture() {
-    // Show departure if train has actually departed (departure is actual)
-    return stop.departure?.dateTimeType?.toUpperCase() == 'ACTUAL';
-  }
-
   Widget _buildExpandedContent(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(8, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (stop.stationFacility != null) ...[
-            const Divider(height: 20),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -429,7 +423,7 @@ class StopCard extends StatelessWidget {
             ),
           ],
           if (stop.arrival != null) ...[
-            const Divider(height: 20),
+            const SizedBox(height: 8),
             _buildTimeSection(
               'Arrival',
               Icons.arrow_downward,
@@ -439,7 +433,7 @@ class StopCard extends StatelessWidget {
             ),
           ],
           if (stop.departure != null) ...[
-            const Divider(height: 20),
+            const SizedBox(height: 8),
             _buildTimeSection(
               'Departure',
               Icons.arrow_upward,
@@ -489,11 +483,7 @@ class StopCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      info.dateTimeType?.toUpperCase() == 'ACTUAL'
-                          ? 'Actual'
-                          : 'Estimated',
-                    ),
+                    Text(info.isActual ? 'Actual' : 'Estimated'),
                     Text(DateFormat('h:mm a').format(actualTime)),
                   ],
                 ),

@@ -67,28 +67,24 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Amtrak Live'),
         forceMaterialTransparency: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Search
-            SearchForm(
-              onSearch: _searchTrain,
-              isLoading: _isLoading,
-              hasResults: _trainData != null || _errorMessage != null,
-            ),
+      body: Column(
+        children: [
+          // Search
+          SearchForm(
+            onSearch: _searchTrain,
+            isLoading: _isLoading,
+            hasResults: _trainData != null || _errorMessage != null,
+          ),
 
-            // Results
-            Expanded(
-              child: SearchResults(
-                isLoading: _isLoading,
-                trainData: _trainData,
-                errorMessage: _errorMessage,
-              ),
+          // Results
+          Expanded(
+            child: SearchResults(
+              isLoading: _isLoading,
+              trainData: _trainData,
+              errorMessage: _errorMessage,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

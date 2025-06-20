@@ -61,6 +61,10 @@ class ArrivalDeparture {
   DateTime get asOfTime {
     return DateTime.parse(asOf);
   }
+
+  bool get isActual {
+    return dateTimeType == "ACTUAL";
+  }
 }
 
 class TrainStop {
@@ -139,6 +143,11 @@ class TrainStop {
     // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);
+  }
+
+  bool get isTrainArrived {
+    if (arrival == null) return true;
+    return arrival!.isActual;
   }
 }
 
