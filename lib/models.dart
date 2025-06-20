@@ -145,9 +145,23 @@ class TrainStop {
     return tz.TZDateTime.from(utcDateTime, location);
   }
 
-  bool get isTrainArrived {
-    if (arrival == null) return true;
-    return arrival!.isActual;
+  bool get hasTrainArrived {
+    if (arrival != null) {
+      return arrival!.isActual;
+    } else {
+      return departure!.isActual;
+    }
+    ;
+  }
+
+  bool get shouldShowDeparture {
+    if (arrival == null) {
+      return true;
+    }
+    if (departure == null) {
+      return false;
+    }
+    return departure!.isActual;
   }
 }
 

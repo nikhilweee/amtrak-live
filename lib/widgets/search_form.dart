@@ -165,6 +165,15 @@ class _SearchFormState extends State<SearchForm> {
             ),
             const SizedBox(width: 12),
           ],
+
+          // Refresh button (only show when collapsed and has data)
+          if (!_isExpanded && _trainNumberController.text.isNotEmpty && _selectedDate != null) ...[
+            IconButton(
+              onPressed: widget.isLoading ? null : _handleSearch,
+              icon: const Icon(Icons.refresh, size: 20),
+              tooltip: 'Refresh train status',
+            ),
+          ],
       
           // Expand/Collapse arrow indicator
           IconButton(

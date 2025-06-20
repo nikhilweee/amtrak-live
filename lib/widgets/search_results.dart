@@ -55,11 +55,6 @@ class _SearchResultsState extends State<SearchResults>
 
   @override
   Widget build(BuildContext context) {
-    // Handle loading state
-    if (widget.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     // Handle error state
     if (widget.errorMessage != null) {
       return Center(
@@ -78,8 +73,13 @@ class _SearchResultsState extends State<SearchResults>
       );
     }
 
-    // Handle null/empty state
-    if (widget.trainData == null) {
+    // Handle initial loading state (no existing data)
+    if (widget.trainData == null && widget.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Handle null/empty state (only when not loading)
+    if (widget.trainData == null && !widget.isLoading) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -101,23 +101,34 @@ class _SearchResultsState extends State<SearchResults>
   }
 
   Widget _buildTrainResults() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          TrainInfoCard(
-            trainData: widget.trainData!,
-            isExpanded: _isTrainInfoExpanded,
-            onToggleExpansion: _toggleTrainInfoExpansion,
+    return Stack(
+      children: [
+        // Always show the scrollable content
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              TrainInfoCard(
+                trainData: widget.trainData!,
+                isExpanded: _isTrainInfoExpanded,
+                onToggleExpansion: _toggleTrainInfoExpansion,
+              ),
+              ...widget.trainData!.stops.map(
+                (stop) => StopCard(
+                  stop: stop,
+                  isExpanded: _expandedStops.contains(stop.id),
+                  onToggleExpansion: () => _toggleStopExpansion(stop.id),
+                ),
+              ),
+            ],
           ),
-          ...widget.trainData!.stops.map(
-            (stop) => StopCard(
-              stop: stop,
-              isExpanded: _expandedStops.contains(stop.id),
-              onToggleExpansion: () => _toggleStopExpansion(stop.id),
-            ),
+        ),
+        // Show loading overlay when refreshing existing data
+        if (widget.isLoading)
+          Container(
+            color: Colors.white.withValues(alpha: 0.0),
+            child: const Center(child: CircularProgressIndicator()),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -279,12 +290,12 @@ class StopCard extends StatelessWidget {
                       stop.stationCode,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: stop.isTrainArrived
+                        color: stop.hasTrainArrived
                             ? Theme.of(context).colorScheme.onPrimary
                             : Theme.of(context).colorScheme.onSecondary,
                       ),
                     ),
-                    backgroundColor: stop.isTrainArrived
+                    backgroundColor: stop.hasTrainArrived
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.secondary,
                   ),
@@ -306,10 +317,10 @@ class StopCard extends StatelessWidget {
                   // Trailing - Time Information
                   Builder(
                     builder: (context) {
-                      final scheduledTime = stop.isTrainArrived
+                      final scheduledTime = stop.shouldShowDeparture
                           ? stop.scheduledDepartureTime
                           : stop.scheduledArrivalTime;
-                      final actualTime = stop.isTrainArrived
+                      final actualTime = stop.shouldShowDeparture
                           ? stop.actualDepartureTime
                           : stop.actualArrivalTime;
 
@@ -358,7 +369,7 @@ class StopCard extends StatelessWidget {
   }
 
   Widget? _buildDisplayMessage() {
-    final info = stop.isTrainArrived ? stop.departure : stop.arrival;
+    final info = stop.shouldShowDeparture ? stop.departure : stop.arrival;
     if (info?.displayMessage == null) return null;
 
     return Text(

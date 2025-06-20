@@ -21,7 +21,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _searchTrain(String trainNumber, DateTime date) async {
     setState(() {
       _isLoading = true;
-      _trainData = null;
       _errorMessage = null;
     });
 
