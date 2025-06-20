@@ -112,55 +112,73 @@ class _SearchFormState extends State<SearchForm> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: _isExpanded ? _buildExpandedForm() : _buildCollapsedHeader(),
-      ),
-    );
-  }
-
-  Widget _buildCollapsedHeader() {
-    return InkWell(
-      onTap: _expandForm,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: Row(
+        child: Column(
           children: [
-            // Train info
-            const Icon(Icons.train, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _trainNumberController.text.isNotEmpty
-                    ? 'Train ${_trainNumberController.text}'
-                    : 'No train selected',
-                style: Theme.of(context).textTheme.titleMedium,
+            // Always show the header (collapsed state info with expand/collapse button)
+            _buildHeader(),
+            // Animated expanded form fields
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: double.infinity,
+                child: _isExpanded
+                    ? _buildFormFields()
+                    : const SizedBox.shrink(),
               ),
             ),
-
-            // Date info
-            if (_selectedDate != null) ...[
-              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                DateFormat('MMM d').format(_selectedDate!),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-              ),
-              const SizedBox(width: 12),
-            ],
-
-            // Down arrow indicator
-            const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExpandedForm() {
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        // Train info
+        const Icon(Icons.train, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            _isExpanded
+                ? 'Search Trains'
+                : (_trainNumberController.text.isNotEmpty
+                    ? 'Train ${_trainNumberController.text}'
+                    : 'No train selected'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+    
+        // Date info (only show when collapsed)
+        if (!_isExpanded && _selectedDate != null) ...[
+          const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+          const SizedBox(width: 4),
+          Text(
+            DateFormat('MMM d').format(_selectedDate!),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(width: 12),
+        ],
+    
+        // Expand/Collapse arrow indicator
+        IconButton(
+          onPressed: _isExpanded ? _collapseForm : _expandForm,
+          icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+          tooltip: _isExpanded ? 'Collapse' : 'Expand',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SizedBox(height: 8),
         // Train Number Input
         TextField(
           controller: _trainNumberController,

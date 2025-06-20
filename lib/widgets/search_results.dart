@@ -30,7 +30,8 @@ class SearchResults extends StatefulWidget {
   State<SearchResults> createState() => _SearchResultsState();
 }
 
-class _SearchResultsState extends State<SearchResults> {
+class _SearchResultsState extends State<SearchResults>
+    with TickerProviderStateMixin {
   // Track which stops are expanded
   final Set<String> _expandedStops = <String>{};
   // Track if train info card is expanded
@@ -143,6 +144,8 @@ class TrainInfoCard extends StatelessWidget {
         children: [
           InkWell(
             onTap: hasDetailedMessages ? onToggleExpansion : null,
+            highlightColor: Colors.transparent,
+            splashFactory: NoSplash.splashFactory,
             child: SizedBox(
               width: double.infinity,
               child: Padding(
@@ -207,8 +210,18 @@ class TrainInfoCard extends StatelessWidget {
               ),
             ),
           ),
-          // Expanded content
-          if (isExpanded) _buildExpandedContent(context),
+          // Animated expanded content
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: double.infinity,
+              child: isExpanded
+                  ? _buildExpandedContent(context)
+                  : const SizedBox.shrink(),
+            ),
+          ),
         ],
       ),
     );
@@ -335,7 +348,18 @@ class StopCard extends StatelessWidget {
               ),
             ),
           ),
-          if (isExpanded) _buildExpandedContent(context),
+          // Animated expanded content
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: double.infinity,
+              child: isExpanded
+                  ? _buildExpandedContent(context)
+                  : const SizedBox.shrink(),
+            ),
+          ),
         ],
       ),
     );
