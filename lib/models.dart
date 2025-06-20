@@ -6,35 +6,46 @@ class ArrivalDeparture {
   final String status;
   final String displayStatus;
   final String displayMessage;
+  final String asOf;
+  final String? detailedMessage;
   final String? dateTimeType;
   final String? dateTime;
   final String? delay;
-  final String asOf;
+  final String? trackNumber;
+  final String? gateNumber;
 
   const ArrivalDeparture({
     required this.scheduleDateTime,
     required this.status,
     required this.displayStatus,
     required this.displayMessage,
+    required this.asOf,
+    this.detailedMessage,
     this.dateTimeType,
     this.dateTime,
     this.delay,
-    required this.asOf,
+    this.trackNumber,
+    this.gateNumber,
   });
 
   factory ArrivalDeparture.fromJson(Map<String, dynamic> json) {
     final schedule = json['schedule'];
     final statusInfo = json['statusInfo'];
+    final track = json['track'];
+    final gate = json['gate'];
 
     return ArrivalDeparture(
       scheduleDateTime: schedule['dateTime'],
       status: statusInfo['status'],
       displayStatus: statusInfo['displayStatus'],
       displayMessage: statusInfo['displayMessage'],
+      asOf: statusInfo['asOf'],
+      detailedMessage: statusInfo?['detailedMessage'],
       dateTimeType: statusInfo?['dateTimeType'],
       dateTime: statusInfo?['dateTime'],
       delay: statusInfo?['delay'],
-      asOf: statusInfo['asOf'],
+      trackNumber: track?['number'],
+      gateNumber: gate?['number'],
     );
   }
 
@@ -140,7 +151,7 @@ class TrainData {
   final String originName;
   final String destinationCode;
   final String destinationName;
-  final String statusMessage;
+  final String? statusMessage;
   final List<TrainStop> stops;
 
   const TrainData({
@@ -152,9 +163,30 @@ class TrainData {
     required this.originName,
     required this.destinationCode,
     required this.destinationName,
-    required this.statusMessage,
+    this.statusMessage,
     required this.stops,
   });
+
+  /// Get a list of unique detailed messages from all stops (arrival and departure)
+  List<String> get detailedMessages {
+    final Set<String> uniqueMessages = <String>{};
+
+    for (final stop in stops) {
+      // Check arrival detailed message
+      if (stop.arrival?.detailedMessage != null &&
+          stop.arrival!.detailedMessage!.isNotEmpty) {
+        uniqueMessages.add(stop.arrival!.detailedMessage!);
+      }
+
+      // Check departure detailed message
+      if (stop.departure?.detailedMessage != null &&
+          stop.departure!.detailedMessage!.isNotEmpty) {
+        uniqueMessages.add(stop.departure!.detailedMessage!);
+      }
+    }
+
+    return uniqueMessages.toList();
+  }
 
   factory TrainData.fromJson(Map<String, dynamic> json) {
     final travelService = json['travelService'];
@@ -169,7 +201,7 @@ class TrainData {
       originName: travelService['origin']['name'],
       destinationCode: travelService['destination']['code'],
       destinationName: travelService['destination']['name'],
-      statusMessage: statusSummary['displayMessage'],
+      statusMessage: statusSummary?['displayMessage'],
       stops: (json['stops'] as List)
           .map((stop) => TrainStop.fromJson(stop))
           .toList(),

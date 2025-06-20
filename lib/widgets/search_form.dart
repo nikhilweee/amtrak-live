@@ -24,39 +24,20 @@ class _SearchFormState extends State<SearchForm> {
   DateTime? _selectedDate = DateTime.now();
   bool _isExpanded = true;
 
+  // === Lifecycle Methods ===
   @override
   void initState() {
     super.initState();
-    _loadSavedData();
+    _loadPreferences();
+    _updateDateDisplay(_selectedDate!);
   }
 
   @override
   void didUpdateWidget(SearchForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.hasResults && !oldWidget.hasResults && _isExpanded) {
-      _toggleExpanded();
+    if (_isExpanded) {
+      _expandForm();
     }
-  }
-
-  Future<void> _loadSavedData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedTrainNumber = prefs.getString('train_number');
-
-    if (savedTrainNumber != null && savedTrainNumber.isNotEmpty) {
-      _trainNumberController.text = savedTrainNumber;
-    }
-
-    // Initialize date controller with today's date
-    if (_selectedDate != null) {
-      _dateController.text = DateFormat(
-        'EEEE, MMMM d, yyyy',
-      ).format(_selectedDate!);
-    }
-  }
-
-  Future<void> _saveTrainNumber(String trainNumber) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('train_number', trainNumber);
   }
 
   @override
@@ -66,23 +47,50 @@ class _SearchFormState extends State<SearchForm> {
     super.dispose();
   }
 
-  void _toggleExpanded() {
+  // === Preferences Management ===
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTrainNumber = prefs.getString('train_number');
+
+    if (savedTrainNumber != null && savedTrainNumber.isNotEmpty) {
+      _trainNumberController.text = savedTrainNumber;
+    }
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('train_number', _trainNumberController.text);
+  }
+
+  // === UI Helper Methods ===
+  void _updateDateDisplay(DateTime date) {
+    _dateController.text = DateFormat('EEEE, MMMM d, yyyy').format(date);
+  }
+
+  void _expandForm() {
     setState(() {
-      _isExpanded = !_isExpanded;
+      _isExpanded = true;
     });
   }
 
+  void _collapseForm() {
+    setState(() {
+      _isExpanded = false;
+    });
+  }
+
+  // === User Interaction Handlers ===
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _dateController.text = DateFormat('EEEE, MMMM d, yyyy').format(picked);
+        _updateDateDisplay(picked);
       });
     }
   }
@@ -92,15 +100,16 @@ class _SearchFormState extends State<SearchForm> {
       return;
     }
 
-    // Save the train number for next time
-    await _saveTrainNumber(_trainNumberController.text);
-
+    _collapseForm();
+    await _savePreferences();
     widget.onSearch(_trainNumberController.text, _selectedDate!);
   }
 
+  // === Widget Builders ===
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: _isExpanded ? _buildExpandedForm() : _buildCollapsedHeader(),
@@ -110,7 +119,7 @@ class _SearchFormState extends State<SearchForm> {
 
   Widget _buildCollapsedHeader() {
     return InkWell(
-      onTap: _toggleExpanded,
+      onTap: _expandForm,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
         child: Row(
@@ -183,16 +192,8 @@ class _SearchFormState extends State<SearchForm> {
         // Search Button
         FilledButton.icon(
           onPressed: widget.isLoading ? null : _handleSearch,
-          icon: widget.isLoading
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.search),
-          label: Text(
-            widget.isLoading ? 'Searching...' : 'Search Train Status',
-          ),
+          icon: const Icon(Icons.search),
+          label: const Text('Search Train Status'),
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
