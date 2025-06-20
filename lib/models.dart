@@ -151,7 +151,6 @@ class TrainStop {
     } else {
       return departure!.isActual;
     }
-    ;
   }
 
   bool get shouldShowDeparture {
