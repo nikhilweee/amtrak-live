@@ -11,3 +11,9 @@ Build and install an APK on a connected device
 flutter build apk --target-platform android-arm64 && \
 adb install build/app/outputs/flutter-apk/app-release.apk
 ```
+
+Update app icons after editing `pubspec.yaml` with the correct paths
+
+```
+dart run flutter_launcher_icons
+```
