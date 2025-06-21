@@ -4,36 +4,27 @@ import 'train_card.dart';
 import 'stop_card.dart';
 
 class SearchResults extends StatefulWidget {
-  final bool isLoading;
   final TrainData? trainData;
   final String? errorMessage;
 
-  const SearchResults({
-    super.key,
-    required this.isLoading,
-    this.trainData,
-    this.errorMessage,
-  });
+  const SearchResults({super.key, this.trainData, this.errorMessage});
 
   @override
   State<SearchResults> createState() => _SearchResultsState();
 }
 
-class _SearchResultsState extends State<SearchResults>
-    with TickerProviderStateMixin {
+class _SearchResultsState extends State<SearchResults> {
   // Track which stops are expanded
   final Set<String> _expandedStops = <String>{};
   // Track if train info card is expanded
   bool _isTrainInfoExpanded = false;
 
   void _toggleStopExpansion(String stopId) {
-    setState(() {
-      if (_expandedStops.contains(stopId)) {
-        _expandedStops.remove(stopId);
-      } else {
-        _expandedStops.add(stopId);
-      }
-    });
+    setState(
+      () => _expandedStops.contains(stopId)
+          ? _expandedStops.remove(stopId)
+          : _expandedStops.add(stopId),
+    );
   }
 
   void _toggleTrainInfoExpansion() {
@@ -44,40 +35,24 @@ class _SearchResultsState extends State<SearchResults>
 
   @override
   Widget build(BuildContext context) {
-    // Handle error state
-    if (widget.errorMessage != null) {
+    // Handle error or empty state
+    if (widget.errorMessage != null || widget.trainData == null) {
+      final isError = widget.errorMessage != null;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(
+              isError ? Icons.error_outline : Icons.train,
+              size: 48,
+              color: isError ? Colors.red : Colors.grey,
+            ),
             const SizedBox(height: 16),
             Text(
-              widget.errorMessage!,
+              isError
+                  ? widget.errorMessage!
+                  : 'Enter a train number and date to search',
               style: const TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Handle initial loading state (no existing data)
-    if (widget.trainData == null && widget.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // Handle null/empty state (only when not loading)
-    if (widget.trainData == null && !widget.isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.train, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'Enter a train number and date to get started',
-              style: TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -90,34 +65,23 @@ class _SearchResultsState extends State<SearchResults>
   }
 
   Widget _buildTrainResults() {
-    return Stack(
-      children: [
-        // Always show the scrollable content
-        SingleChildScrollView(
-          child: Column(
-            children: [
-              TrainCard(
-                trainData: widget.trainData!,
-                isExpanded: _isTrainInfoExpanded,
-                onToggleExpansion: _toggleTrainInfoExpansion,
-              ),
-              ...widget.trainData!.stops.map(
-                (stop) => StopCard(
-                  stop: stop,
-                  isExpanded: _expandedStops.contains(stop.id),
-                  onToggleExpansion: () => _toggleStopExpansion(stop.id),
-                ),
-              ),
-            ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          TrainCard(
+            trainData: widget.trainData!,
+            isExpanded: _isTrainInfoExpanded,
+            onToggleExpansion: _toggleTrainInfoExpansion,
           ),
-        ),
-        // Show loading overlay when refreshing existing data
-        if (widget.isLoading)
-          Container(
-            color: Colors.white.withValues(alpha: 0.0),
-            child: const Center(child: CircularProgressIndicator()),
+          ...widget.trainData!.stops.map(
+            (stop) => StopCard(
+              stop: stop,
+              isExpanded: _expandedStops.contains(stop.id),
+              onToggleExpansion: () => _toggleStopExpansion(stop.id),
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

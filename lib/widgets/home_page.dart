@@ -68,17 +68,21 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
+          // Progress indicator
+          SizedBox(
+            height: 4.0,
+            child: _isLoading ? const LinearProgressIndicator() : null,
+          ),
+
           // Search
           SearchForm(
             onSearch: _searchTrain,
             isLoading: _isLoading,
-            hasResults: _trainData != null || _errorMessage != null,
           ),
 
           // Results
           Expanded(
             child: SearchResults(
-              isLoading: _isLoading,
               trainData: _trainData,
               errorMessage: _errorMessage,
             ),

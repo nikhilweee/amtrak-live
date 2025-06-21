@@ -5,13 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SearchForm extends StatefulWidget {
   final Function(String trainNumber, DateTime date) onSearch;
   final bool isLoading;
-  final bool hasResults;
 
   const SearchForm({
     super.key,
     required this.onSearch,
     required this.isLoading,
-    this.hasResults = false,
   });
 
   @override
@@ -36,7 +34,7 @@ class _SearchFormState extends State<SearchForm> {
   void didUpdateWidget(SearchForm oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_isExpanded) {
-      _expandForm();
+      setState(() => _isExpanded = true);
     }
   }
 
@@ -67,18 +65,6 @@ class _SearchFormState extends State<SearchForm> {
     _dateController.text = DateFormat('EEEE, MMMM d, yyyy').format(date);
   }
 
-  void _expandForm() {
-    setState(() {
-      _isExpanded = true;
-    });
-  }
-
-  void _collapseForm() {
-    setState(() {
-      _isExpanded = false;
-    });
-  }
-
   // === User Interaction Handlers ===
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -100,7 +86,7 @@ class _SearchFormState extends State<SearchForm> {
       return;
     }
 
-    _collapseForm();
+    setState(() => _isExpanded = false);
     await _savePreferences();
     widget.onSearch(_trainNumberController.text, _selectedDate!);
   }
@@ -177,7 +163,7 @@ class _SearchFormState extends State<SearchForm> {
       
           // Expand/Collapse arrow indicator
           IconButton(
-            onPressed: _isExpanded ? _collapseForm : _expandForm,
+            onPressed: () => setState(() => _isExpanded = !_isExpanded),
             icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
             tooltip: _isExpanded ? 'Collapse' : 'Expand',
           ),
