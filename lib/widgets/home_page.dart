@@ -3,8 +3,10 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../models.dart';
+import '../services/recent_search_service.dart';
 import 'search_form.dart';
 import 'search_results.dart';
+import 'recents_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,6 +27,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
+      // Add to recent searches
+      await RecentSearchService.addRecentSearch(trainNumber, date);
+
       final formattedDate = DateFormat('yyyy-MM-dd').format(date);
       final uri = Uri.https(
         'www.amtrak.com',
@@ -59,12 +64,27 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _navigateToRecents() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => RecentsPage(onSearchSelected: _searchTrain),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Amtrak Live'),
         forceMaterialTransparency: true,
+        actions: [
+          IconButton(
+            onPressed: _navigateToRecents,
+            icon: const Icon(Icons.history),
+            tooltip: 'Recent Searches',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -75,10 +95,7 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // Search
-          SearchForm(
-            onSearch: _searchTrain,
-            isLoading: _isLoading,
-          ),
+          SearchForm(onSearch: _searchTrain, isLoading: _isLoading),
 
           // Results
           Expanded(

@@ -111,36 +111,28 @@ class TrainStop {
 
   DateTime? get scheduledArrivalTime {
     if (arrival == null) return null;
-    // Parse the datetime with timezone offset
     final utcDateTime = arrival!.scheduledTime;
-    // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);
   }
 
   DateTime? get actualArrivalTime {
     if (arrival?.actualTime == null) return null;
-    // Parse the datetime with timezone offset
     final utcDateTime = arrival!.actualTime!;
-    // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);
   }
 
   DateTime? get scheduledDepartureTime {
     if (departure == null) return null;
-    // Parse the datetime with timezone offset
     final utcDateTime = departure!.scheduledTime;
-    // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);
   }
 
   DateTime? get actualDepartureTime {
     if (departure?.actualTime == null) return null;
-    // Parse the datetime with timezone offset
     final utcDateTime = departure!.actualTime!;
-    // Convert to the station's timezone
     final location = tz.getLocation(stationTimeZone);
     return tz.TZDateTime.from(utcDateTime, location);
   }
@@ -228,5 +220,42 @@ class TrainData {
           .map((stop) => TrainStop.fromJson(stop))
           .toList(),
     );
+  }
+}
+
+// Recent Search Model
+class RecentSearch {
+  final String trainNumber;
+  final DateTime searchDate;
+  final DateTime timestamp;
+
+  const RecentSearch({
+    required this.trainNumber,
+    required this.searchDate,
+    required this.timestamp,
+  });
+
+  factory RecentSearch.fromJson(Map<String, dynamic> json) {
+    return RecentSearch(
+      trainNumber: json['trainNumber'],
+      searchDate: DateTime.parse(json['searchDate']),
+      timestamp: DateTime.parse(json['timestamp']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'trainNumber': trainNumber,
+      'searchDate': searchDate.toIso8601String(),
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+
+  // Check if this search matches another (same train and date)
+  bool matches(String trainNum, DateTime date) {
+    return trainNumber == trainNum &&
+        searchDate.year == date.year &&
+        searchDate.month == date.month &&
+        searchDate.day == date.day;
   }
 }

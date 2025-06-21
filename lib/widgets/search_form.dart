@@ -133,12 +133,12 @@ class _SearchFormState extends State<SearchForm> {
               _isExpanded
                   ? 'Search Train'
                   : (_trainNumberController.text.isNotEmpty
-                      ? 'Train ${_trainNumberController.text}'
-                      : 'No train selected'),
+                        ? 'Train ${_trainNumberController.text}'
+                        : 'No train selected'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-      
+
           // Date info (only show when collapsed)
           if (!_isExpanded && _selectedDate != null) ...[
             const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
@@ -153,18 +153,22 @@ class _SearchFormState extends State<SearchForm> {
           ],
 
           // Refresh button (only show when collapsed and has data)
-          if (!_isExpanded && _trainNumberController.text.isNotEmpty && _selectedDate != null) ...[
+          if (!_isExpanded &&
+              _trainNumberController.text.isNotEmpty &&
+              _selectedDate != null) ...[
             IconButton(
               onPressed: widget.isLoading ? null : _handleSearch,
               icon: const Icon(Icons.refresh, size: 20),
               tooltip: 'Refresh train status',
             ),
           ],
-      
+
           // Expand/Collapse arrow indicator
           IconButton(
             onPressed: () => setState(() => _isExpanded = !_isExpanded),
-            icon: Icon(_isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+            icon: Icon(
+              _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+            ),
             tooltip: _isExpanded ? 'Collapse' : 'Expand',
           ),
         ],
