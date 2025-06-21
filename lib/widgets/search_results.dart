@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models.dart';
-import 'train_info_card.dart';
+import 'train_card.dart';
 import 'stop_card.dart';
 
 class SearchResults extends StatefulWidget {
@@ -96,7 +96,7 @@ class _SearchResultsState extends State<SearchResults>
         SingleChildScrollView(
           child: Column(
             children: [
-              TrainInfoCard(
+              TrainCard(
                 trainData: widget.trainData!,
                 isExpanded: _isTrainInfoExpanded,
                 onToggleExpansion: _toggleTrainInfoExpansion,

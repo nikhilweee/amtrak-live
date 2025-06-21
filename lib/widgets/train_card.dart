@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../utils.dart';
 
-class TrainInfoCard extends StatelessWidget {
+class TrainCard extends StatelessWidget {
   final TrainData trainData;
   final bool isExpanded;
   final VoidCallback onToggleExpansion;
 
-  const TrainInfoCard({
+  const TrainCard({
     super.key,
     required this.trainData,
     required this.isExpanded,
