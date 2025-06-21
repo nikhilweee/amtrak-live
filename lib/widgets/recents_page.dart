@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models.dart';
-import '../services/recent_search_service.dart';
+import '../services/recent_service.dart';
 
 class RecentsPage extends StatefulWidget {
   final Function(String trainNumber, DateTime date) onSearchSelected;
@@ -23,7 +23,7 @@ class _RecentsPageState extends State<RecentsPage> {
   }
 
   Future<void> _loadRecentSearches() async {
-    final searches = await RecentSearchService.loadRecentSearches();
+    final searches = await RecentService.loadRecentSearches();
     setState(() {
       _recentSearches = searches;
       _isLoading = false;
@@ -31,7 +31,7 @@ class _RecentsPageState extends State<RecentsPage> {
   }
 
   Future<void> _removeSearch(RecentSearch search) async {
-    await RecentSearchService.removeRecentSearch(search);
+    await RecentService.removeRecentSearch(search);
     await _loadRecentSearches();
   }
 
@@ -57,7 +57,7 @@ class _RecentsPageState extends State<RecentsPage> {
     );
 
     if (confirm == true) {
-      await RecentSearchService.clearAllRecentSearches();
+      await RecentService.clearAllRecentSearches();
       await _loadRecentSearches();
     }
   }

@@ -2,7 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models.dart';
 
-class RecentSearchService {
+class RecentService {
   static const String _key = 'recent_searches';
   static const int _maxSearches = 50;
 

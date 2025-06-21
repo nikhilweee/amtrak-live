@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
-import 'dart:convert';
 import '../models.dart';
-import '../services/recent_search_service.dart';
+import '../services/recent_service.dart';
+import '../services/search_service.dart';
 import 'search_form.dart';
 import 'search_results.dart';
 import 'recents_page.dart';
@@ -26,42 +24,22 @@ class _HomePageState extends State<HomePage> {
       _errorMessage = null;
     });
 
-    try {
-      // Add to recent searches
-      await RecentSearchService.addRecentSearch(trainNumber, date);
+    // Add to recent searches
+    await RecentService.addRecentSearch(trainNumber, date);
 
-      final formattedDate = DateFormat('yyyy-MM-dd').format(date);
-      final uri = Uri.https(
-        'www.amtrak.com',
-        '/dotcom/travel-service/statuses/$trainNumber',
-        {'service-date': formattedDate},
-      );
-      final response = await http.get(
-        uri,
-        headers: {
-          'referer': 'https://www.amtrak.com/tickets/train-status.html',
-        },
-      );
+    // Perform the search
+    final result = await SearchService.searchTrain(trainNumber, date);
 
-      setState(() {
-        if (response.statusCode == 200) {
-          final jsonData = json.decode(response.body);
-          if (jsonData['data'] != null && jsonData['data'].isNotEmpty) {
-            _trainData = TrainData.fromJson(jsonData['data'][0]);
-          } else {
-            _errorMessage = 'No train data found';
-          }
-        } else {
-          _errorMessage = 'Error: ${response.statusCode}';
-        }
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
+    setState(() {
+      if (result.isSuccess) {
+        _trainData = result.data;
+        _errorMessage = null;
+      } else {
+        _trainData = null;
+        _errorMessage = result.error;
+      }
+      _isLoading = false;
+    });
   }
 
   void _navigateToRecents() {
