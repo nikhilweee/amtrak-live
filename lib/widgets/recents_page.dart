@@ -96,7 +96,7 @@ class _RecentsPageState extends State<RecentsPage> {
             ? [
                 IconButton(
                   onPressed: _clearAllSearches,
-                  icon: const Icon(Icons.clear_all),
+                  icon: const Icon(Icons.delete),
                   tooltip: 'Clear All',
                 ),
               ]
