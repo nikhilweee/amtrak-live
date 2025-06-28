@@ -13,14 +13,24 @@ class SearchForm extends StatefulWidget {
   });
 
   @override
-  State<SearchForm> createState() => _SearchFormState();
+  State<SearchForm> createState() => SearchFormState();
 }
 
-class _SearchFormState extends State<SearchForm> {
+class SearchFormState extends State<SearchForm> {
   final TextEditingController _trainNumberController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   DateTime? _selectedDate = DateTime.now();
   bool _isExpanded = true;
+
+  // === Public Methods ===
+  void updateSearchFields(String trainNumber, DateTime date) {
+    setState(() {
+      _trainNumberController.text = trainNumber;
+      _selectedDate = date;
+      _updateDateDisplay(date);
+      _isExpanded = false; // Collapse the form to show the updated values
+    });
+  }
 
   // === Lifecycle Methods ===
   @override

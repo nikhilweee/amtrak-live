@@ -14,6 +14,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<SearchFormState> _searchFormKey = GlobalKey<SearchFormState>();
   bool _isLoading = false;
   TrainData? _trainData;
   String? _errorMessage;
@@ -42,12 +43,18 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _navigateToRecents() {
-    Navigator.of(context).push(
+  Future<void> _navigateToRecents() async {
+    final result = await Navigator.of(context).push<RecentSearch>(
       MaterialPageRoute(
-        builder: (context) => RecentsPage(onSearchSelected: _searchTrain),
+        builder: (context) => const RecentsPage(),
       ),
     );
+    
+    if (result != null) {
+      // Update search form, then search
+      _searchFormKey.currentState?.updateSearchFields(result.trainNumber, result.searchDate);
+      _searchTrain(result.trainNumber, result.searchDate);
+    }
   }
 
   @override
@@ -73,7 +80,7 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // Search
-          SearchForm(onSearch: _searchTrain, isLoading: _isLoading),
+          SearchForm(key: _searchFormKey, onSearch: _searchTrain, isLoading: _isLoading),
 
           // Results
           Expanded(

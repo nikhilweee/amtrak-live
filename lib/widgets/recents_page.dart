@@ -4,9 +4,7 @@ import '../models.dart';
 import '../services/recent_service.dart';
 
 class RecentsPage extends StatefulWidget {
-  final Function(String trainNumber, DateTime date) onSearchSelected;
-
-  const RecentsPage({super.key, required this.onSearchSelected});
+  const RecentsPage({super.key});
 
   @override
   State<RecentsPage> createState() => _RecentsPageState();
@@ -63,8 +61,7 @@ class _RecentsPageState extends State<RecentsPage> {
   }
 
   void _selectSearch(RecentSearch search) {
-    Navigator.of(context).pop();
-    widget.onSearchSelected(search.trainNumber, search.searchDate);
+    Navigator.of(context).pop(search);
   }
 
   String _formatTimestamp(DateTime timestamp) {

@@ -48,6 +48,12 @@ class TrainCard extends StatelessWidget {
                       '${trainData.originName} → ${trainData.destinationName}',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
+                    // Train date
+                    Text(
+                      trainData.date,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 4),
                     // Status message if available
                     if (trainData.statusMessage != null) ...[
                       const SizedBox(height: 8),
