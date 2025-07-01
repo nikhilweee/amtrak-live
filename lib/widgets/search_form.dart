@@ -17,19 +17,32 @@ class SearchForm extends StatefulWidget {
 }
 
 class SearchFormState extends State<SearchForm> {
-  final TextEditingController _trainNumberController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
+  String? _selectedTrain;
   DateTime? _selectedDate = DateTime.now();
   bool _isExpanded = true;
 
-  // === Public Methods ===
-  void updateSearchFields(String trainNumber, DateTime date) {
+  final TextEditingController _trainNumberController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
+
+  void _updateFields({String? trainNumber, DateTime? date, bool? expanded}) {
     setState(() {
-      _trainNumberController.text = trainNumber;
-      _selectedDate = date;
-      _updateDateDisplay(date);
-      _isExpanded = false; // Collapse the form to show the updated values
+      if (trainNumber != null) {
+        _selectedTrain = trainNumber;
+        _trainNumberController.text = trainNumber;
+      }
+      if (date != null) {
+        _selectedDate = date;
+        _dateController.text = DateFormat('EEEE, MMMM d, yyyy').format(date);
+      }
+      if (expanded != null) {
+        _isExpanded = expanded;
+      }
     });
+  }
+
+  void setFieldsAndSearch(String trainNumber, DateTime date) {
+    _updateFields(trainNumber: trainNumber, date: date);
+    _performSearch();
   }
 
   // === Lifecycle Methods ===
@@ -37,15 +50,7 @@ class SearchFormState extends State<SearchForm> {
   void initState() {
     super.initState();
     _loadPreferences();
-    _updateDateDisplay(_selectedDate!);
-  }
-
-  @override
-  void didUpdateWidget(SearchForm oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_isExpanded) {
-      setState(() => _isExpanded = true);
-    }
+    _updateFields(date: _selectedDate);
   }
 
   @override
@@ -59,20 +64,16 @@ class SearchFormState extends State<SearchForm> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     final savedTrainNumber = prefs.getString('train_number');
-
-    if (savedTrainNumber != null && savedTrainNumber.isNotEmpty) {
-      _trainNumberController.text = savedTrainNumber;
+    if (savedTrainNumber?.isNotEmpty == true) {
+      _updateFields(trainNumber: savedTrainNumber);
     }
   }
 
   Future<void> _savePreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('train_number', _trainNumberController.text);
-  }
-
-  // === UI Helper Methods ===
-  void _updateDateDisplay(DateTime date) {
-    _dateController.text = DateFormat('EEEE, MMMM d, yyyy').format(date);
+    if (_selectedTrain?.isNotEmpty == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('train_number', _selectedTrain!);
+    }
   }
 
   // === User Interaction Handlers ===
@@ -84,21 +85,16 @@ class SearchFormState extends State<SearchForm> {
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _updateDateDisplay(picked);
-      });
+      _updateFields(date: picked);
     }
   }
 
-  void _handleSearch() async {
-    if (_trainNumberController.text.isEmpty || _selectedDate == null) {
-      return;
-    }
+  Future<void> _performSearch() async {
+    if (_selectedTrain?.isEmpty != false || _selectedDate == null) return;
 
-    setState(() => _isExpanded = false);
     await _savePreferences();
-    widget.onSearch(_trainNumberController.text, _selectedDate!);
+    _updateFields(expanded: false);
+    widget.onSearch(_selectedTrain!, _selectedDate!);
   }
 
   // === Widget Builders ===
@@ -110,9 +106,7 @@ class SearchFormState extends State<SearchForm> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            // Always show the header (collapsed state info with expand/collapse button)
             _buildHeader(),
-            // Animated expanded form fields
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -142,8 +136,8 @@ class SearchFormState extends State<SearchForm> {
             child: Text(
               _isExpanded
                   ? 'Search Train'
-                  : (_trainNumberController.text.isNotEmpty
-                        ? 'Train ${_trainNumberController.text}'
+                  : (_selectedTrain?.isNotEmpty == true
+                        ? 'Train $_selectedTrain'
                         : 'No train selected'),
               style: Theme.of(context).textTheme.titleMedium,
             ),
@@ -164,10 +158,10 @@ class SearchFormState extends State<SearchForm> {
 
           // Refresh button (only show when collapsed and has data)
           if (!_isExpanded &&
-              _trainNumberController.text.isNotEmpty &&
+              _selectedTrain?.isNotEmpty == true &&
               _selectedDate != null) ...[
             IconButton(
-              onPressed: widget.isLoading ? null : _handleSearch,
+              onPressed: widget.isLoading ? null : _performSearch,
               icon: const Icon(Icons.refresh, size: 20),
               tooltip: 'Refresh train status',
             ),
@@ -175,7 +169,7 @@ class SearchFormState extends State<SearchForm> {
 
           // Expand/Collapse arrow indicator
           IconButton(
-            onPressed: () => setState(() => _isExpanded = !_isExpanded),
+            onPressed: () => _updateFields(expanded: !_isExpanded),
             icon: Icon(
               _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
             ),
@@ -194,6 +188,7 @@ class SearchFormState extends State<SearchForm> {
         // Train Number Input
         TextField(
           controller: _trainNumberController,
+          onChanged: (value) => _updateFields(trainNumber: value),
           decoration: const InputDecoration(
             labelText: 'Train Number',
             hintText: 'Enter train number (e.g., 91)',
@@ -221,7 +216,7 @@ class SearchFormState extends State<SearchForm> {
 
         // Search Button
         FilledButton.icon(
-          onPressed: widget.isLoading ? null : _handleSearch,
+          onPressed: widget.isLoading ? null : _performSearch,
           icon: const Icon(Icons.search),
           label: const Text('Search'),
           style: FilledButton.styleFrom(

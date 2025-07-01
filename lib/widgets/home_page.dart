@@ -14,10 +14,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final GlobalKey<SearchFormState> _searchFormKey = GlobalKey<SearchFormState>();
+  final GlobalKey<SearchFormState> _searchFormKey =
+      GlobalKey<SearchFormState>();
   bool _isLoading = false;
   TrainData? _trainData;
   String? _errorMessage;
+  TrainLocation? _trainLocation;
 
   Future<void> _searchTrain(String trainNumber, DateTime date) async {
     setState(() {
@@ -28,16 +30,24 @@ class _HomePageState extends State<HomePage> {
     // Add to recent searches
     await RecentService.addRecentSearch(trainNumber, date);
 
-    // Perform the search
-    final result = await SearchService.searchTrain(trainNumber, date);
+    // Perform the search and get train locations in parallel
+    final results = await Future.wait([
+      SearchService.searchTrain(trainNumber, date),
+      SearchService.searchLocations(trainNumber, date),
+    ]);
+
+    final searchResult = results[0] as SearchResult;
+    final locationData = results[1] as TrainLocation?;
 
     setState(() {
-      if (result.isSuccess) {
-        _trainData = result.data;
+      if (searchResult.isSuccess) {
+        _trainData = searchResult.data;
+        _trainLocation = locationData;
         _errorMessage = null;
       } else {
         _trainData = null;
-        _errorMessage = result.error;
+        _trainLocation = null;
+        _errorMessage = searchResult.error;
       }
       _isLoading = false;
     });
@@ -45,15 +55,15 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _navigateToRecents() async {
     final result = await Navigator.of(context).push<RecentSearch>(
-      MaterialPageRoute(
-        builder: (context) => const RecentsPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const RecentsPage()),
     );
-    
+
     if (result != null) {
-      // Update search form, then search
-      _searchFormKey.currentState?.updateSearchFields(result.trainNumber, result.searchDate);
-      _searchTrain(result.trainNumber, result.searchDate);
+      // Update search form and execute search
+      _searchFormKey.currentState?.setFieldsAndSearch(
+        result.trainNumber,
+        result.searchDate,
+      );
     }
   }
 
@@ -80,13 +90,18 @@ class _HomePageState extends State<HomePage> {
           ),
 
           // Search
-          SearchForm(key: _searchFormKey, onSearch: _searchTrain, isLoading: _isLoading),
+          SearchForm(
+            key: _searchFormKey,
+            onSearch: _searchTrain,
+            isLoading: _isLoading,
+          ),
 
           // Results
           Expanded(
             child: SearchResults(
               trainData: _trainData,
               errorMessage: _errorMessage,
+              trainLocation: _trainLocation,
             ),
           ),
         ],

@@ -1,6 +1,20 @@
 // Amtrak Train Data Models
 import 'package:timezone/timezone.dart' as tz;
 
+class TrainLocation {
+  final double lat;
+  final double long;
+  final double speed;
+  final String heading;
+
+  const TrainLocation({
+    required this.lat,
+    required this.long,
+    required this.speed,
+    required this.heading,
+  });
+}
+
 class ArrivalDeparture {
   final String scheduleDateTime;
   final String status;

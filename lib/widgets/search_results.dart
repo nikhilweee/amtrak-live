@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import 'train_card.dart';
 import 'stop_card.dart';
+import 'map_widget.dart';
 
 class SearchResults extends StatefulWidget {
   final TrainData? trainData;
   final String? errorMessage;
+  final TrainLocation? trainLocation;
 
-  const SearchResults({super.key, this.trainData, this.errorMessage});
+  const SearchResults({
+    super.key,
+    this.trainData,
+    this.errorMessage,
+    this.trainLocation,
+  });
 
   @override
   State<SearchResults> createState() => _SearchResultsState();
@@ -73,6 +80,9 @@ class _SearchResultsState extends State<SearchResults> {
             isExpanded: _isTrainInfoExpanded,
             onToggleExpansion: _toggleTrainInfoExpansion,
           ),
+          // Map showing train location (only show when available)
+          if (widget.trainLocation != null)
+            MapWidget(trainLocation: widget.trainLocation!),
           ...widget.trainData!.stops.map(
             (stop) => StopCard(
               stop: stop,
