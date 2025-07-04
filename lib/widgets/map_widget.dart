@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models.dart';
 
@@ -84,7 +86,7 @@ class _MapWidgetState extends State<MapWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 250,
+      height: 400,
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -102,14 +104,17 @@ class _MapWidgetState extends State<MapWidget> {
         markers: _markers,
         polylines: _polylines,
         mapType: MapType.normal,
+        zoomGesturesEnabled: true,
+        scrollGesturesEnabled: true,
         myLocationEnabled: false,
         myLocationButtonEnabled: false,
-        zoomControlsEnabled: true,
-        compassEnabled: true,
-        scrollGesturesEnabled: true,
-        zoomGesturesEnabled: true,
-        rotateGesturesEnabled: true,
-        tiltGesturesEnabled: true,
+        compassEnabled: false,
+        zoomControlsEnabled: false,
+        rotateGesturesEnabled: false,
+        tiltGesturesEnabled: false,
+        gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+          Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+        },
       ),
     );
   }
