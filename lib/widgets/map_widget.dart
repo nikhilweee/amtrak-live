@@ -23,35 +23,62 @@ class _MapWidgetState extends State<MapWidget> {
     _createPolylines();
   }
 
-  void _createMarkers() {
-    _markers = {
-      Marker(
-        markerId: const MarkerId('train'),
-        position: LatLng(widget.trainLocation.lat, widget.trainLocation.long),
-        infoWindow: InfoWindow(
-          title: 'Train Location',
-          snippet:
-              'Heading ${widget.trainLocation.heading} at '
-              '${widget.trainLocation.speed.toStringAsFixed(0)} mph',
+  @override
+  void didUpdateWidget(MapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Update markers and polylines if the train location has changed
+    if (oldWidget.trainLocation.lat != widget.trainLocation.lat ||
+        oldWidget.trainLocation.long != widget.trainLocation.long ||
+        oldWidget.trainLocation.speed != widget.trainLocation.speed ||
+        oldWidget.trainLocation.heading != widget.trainLocation.heading) {
+      _createMarkers();
+      _createPolylines();
+
+      // Update camera position to new train location
+      _controller?.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(widget.trainLocation.lat, widget.trainLocation.long),
         ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      ),
-    };
+      );
+    }
+  }
+
+  void _createMarkers() {
+    setState(() {
+      _markers = {
+        Marker(
+          markerId: const MarkerId('train'),
+          position: LatLng(widget.trainLocation.lat, widget.trainLocation.long),
+          infoWindow: InfoWindow(
+            title: 'Train Location',
+            snippet:
+                'Heading ${widget.trainLocation.heading} at '
+                '${widget.trainLocation.speed.toStringAsFixed(0)} mph',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      };
+    });
   }
 
   void _createPolylines() {
-    if (widget.trainLocation.routeCoordinates != null &&
-        widget.trainLocation.routeCoordinates!.isNotEmpty) {
-      _polylines = {
-        Polyline(
-          polylineId: const PolylineId('route'),
-          points: widget.trainLocation.routeCoordinates!,
-          color: Colors.blue,
-          width: 3,
-          patterns: [],
-        ),
-      };
-    }
+    setState(() {
+      if (widget.trainLocation.routeCoordinates != null &&
+          widget.trainLocation.routeCoordinates!.isNotEmpty) {
+        _polylines = {
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: widget.trainLocation.routeCoordinates!,
+            color: Colors.blue,
+            width: 3,
+            patterns: [],
+          ),
+        };
+      } else {
+        _polylines = {};
+      }
+    });
   }
 
   @override
