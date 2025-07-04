@@ -1,18 +1,37 @@
 // Amtrak Train Data Models
 import 'package:timezone/timezone.dart' as tz;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class TrainLocation {
   final double lat;
   final double long;
   final double speed;
   final String heading;
+  final String cmsId;
+  final String routeName;
+  final List<LatLng>? routeCoordinates;
 
   const TrainLocation({
     required this.lat,
     required this.long,
     required this.speed,
     required this.heading,
+    required this.cmsId,
+    required this.routeName,
+    this.routeCoordinates,
   });
+
+  TrainLocation copyWith({List<LatLng>? routeCoordinates}) {
+    return TrainLocation(
+      lat: lat,
+      long: long,
+      speed: speed,
+      heading: heading,
+      cmsId: cmsId,
+      routeName: routeName,
+      routeCoordinates: routeCoordinates ?? this.routeCoordinates,
+    );
+  }
 }
 
 class ArrivalDeparture {

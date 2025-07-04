@@ -14,21 +14,20 @@ class MapWidget extends StatefulWidget {
 class _MapWidgetState extends State<MapWidget> {
   GoogleMapController? _controller;
   Set<Marker> _markers = {};
+  Set<Polyline> _polylines = {};
 
   @override
   void initState() {
     super.initState();
     _createMarkers();
+    _createPolylines();
   }
 
   void _createMarkers() {
     _markers = {
       Marker(
         markerId: const MarkerId('train'),
-        position: LatLng(
-          widget.trainLocation.lat,
-          widget.trainLocation.long,
-        ),
+        position: LatLng(widget.trainLocation.lat, widget.trainLocation.long),
         infoWindow: InfoWindow(
           title: 'Train Location',
           snippet:
@@ -38,6 +37,21 @@ class _MapWidgetState extends State<MapWidget> {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ),
     };
+  }
+
+  void _createPolylines() {
+    if (widget.trainLocation.routeCoordinates != null &&
+        widget.trainLocation.routeCoordinates!.isNotEmpty) {
+      _polylines = {
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: widget.trainLocation.routeCoordinates!,
+          color: Colors.blue,
+          width: 3,
+          patterns: [],
+        ),
+      };
+    }
   }
 
   @override
@@ -59,6 +73,7 @@ class _MapWidgetState extends State<MapWidget> {
           zoom: 8.0,
         ),
         markers: _markers,
+        polylines: _polylines,
         mapType: MapType.normal,
         myLocationEnabled: false,
         myLocationButtonEnabled: false,

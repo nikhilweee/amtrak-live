@@ -30,10 +30,10 @@ class _HomePageState extends State<HomePage> {
     // Add to recent searches
     await RecentService.addRecentSearch(trainNumber, date);
 
-    // Perform the search and get train locations in parallel
+    // Perform the search and get train with route coordinates in parallel
     final results = await Future.wait([
       SearchService.searchTrain(trainNumber, date),
-      SearchService.searchLocations(trainNumber, date),
+      SearchService.searchRoute(trainNumber, date),
     ]);
 
     final searchResult = results[0] as SearchResult;

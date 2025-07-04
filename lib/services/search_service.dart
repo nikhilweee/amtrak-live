@@ -1,6 +1,8 @@
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models.dart';
 import 'amtrak_decrypt.dart';
 
@@ -40,54 +42,129 @@ class SearchService {
     }
   }
 
-  /// Get real-time train location for a specific train number and date from Amtrak
-  static Future<TrainLocation?> searchLocations(
+  /// Get train location and its route coordinates for a specific train number and date
+  static Future<TrainLocation?> searchRoute(
     String trainNumber,
     DateTime date,
   ) async {
-    final data = await AmtrakDecrypt.fetchAndDecryptData();
+    // First get the train location
+    final trainLocation = await _fetchLocation(trainNumber, date);
+    if (trainLocation == null) return null;
 
-    // Parse the decrypted data to find the train with matching train number and date
-    if (data['features'] != null && data['features'].isNotEmpty) {
-      for (final feature in data['features']) {
-        final properties = feature['properties'];
-        final trainNum = properties?['TrainNum']?.toString();
+    // Then get the route coordinates using the train's CMS ID and route name
+    final routeCoordinates = await _fetchRouteCoordinates(
+      trainLocation.routeName,
+      trainLocation.cmsId,
+    );
+    if (routeCoordinates == null) return null;
 
-        if (trainNum == trainNumber) {
-          // Check if the OrigSchDep date matches the provided date
-          final origSchDep = properties?['OrigSchDep']?.toString();
-          if (origSchDep != null) {
-            // Parse the OrigSchDep string (format: "6/30/2025 6:05:00 PM")
-            final parsedDate = DateFormat(
-              'M/d/yyyy h:mm:ss a',
-            ).parse(origSchDep);
+    // Return a new TrainLocation with route coordinates included
+    return trainLocation.copyWith(routeCoordinates: routeCoordinates);
+  }
 
-            // Compare only the date part (year, month, day)
-            final isDateMatch =
-                parsedDate.year == date.year &&
-                parsedDate.month == date.month &&
-                parsedDate.day == date.day;
+  /// Get real-time train location for a specific train number and date from Amtrak
+  static Future<TrainLocation?> _fetchLocation(
+    String trainNumber,
+    DateTime date,
+  ) async {
+    final data = await AmtrakDecrypt.getTrainData();
 
-            if (isDateMatch) {
-              final geometry = feature['geometry'];
-              if (geometry != null && geometry['coordinates'] != null) {
-                final coordinates = geometry['coordinates'];
-                if (coordinates.length >= 2) {
-                  return TrainLocation(
-                    lat: (coordinates[1] as num).toDouble(),
-                    long: (coordinates[0] as num).toDouble(),
-                    speed: double.parse(properties['Velocity'].toString()),
-                    heading: properties['Heading']?.toString() ?? 'Unknown',
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
+    if (data['features'] == null || data['features'].isEmpty) {
+      return null;
+    }
+
+    for (final feature in data['features']) {
+      final properties = feature['properties'];
+      final trainNum = properties?['TrainNum']?.toString();
+
+      if (trainNum != trainNumber) continue;
+
+      final origSchDep = properties?['OrigSchDep']?.toString();
+      if (origSchDep == null) continue;
+
+      // Parse the OrigSchDep string (format: "6/30/2025 6:05:00 PM")
+      final parsedDate = DateFormat('M/d/yyyy h:mm:ss a').parse(origSchDep);
+
+      final isDateMatch =
+          parsedDate.year == date.year &&
+          parsedDate.month == date.month &&
+          parsedDate.day == date.day;
+      if (!isDateMatch) continue;
+
+      final geometry = feature['geometry'];
+      if (geometry == null || geometry['coordinates'] == null) continue;
+
+      final coordinates = geometry['coordinates'];
+      if (coordinates.length < 2) continue;
+
+      return TrainLocation(
+        lat: (coordinates[1] as num).toDouble(),
+        long: (coordinates[0] as num).toDouble(),
+        speed: double.parse(properties['Velocity'].toString()),
+        heading: properties['Heading']?.toString() ?? 'Unknown',
+        cmsId: properties['CMSID']?.toString() ?? '',
+        routeName: properties['RouteName']?.toString() ?? '',
+      );
     }
 
     return null;
+  }
+
+  /// Get route coordinates for a specific route name
+  static Future<List<LatLng>?> _fetchRouteCoordinates(
+    String routeName,
+    String cmsId,
+  ) async {
+    try {
+      final uri = Uri.parse(
+        'https://maps.amtrak.com/services/MapDataService/stations/nationalRoute',
+      ).replace(queryParameters: {'routeName': routeName});
+
+      final response = await http.get(uri);
+
+      if (response.statusCode != 200) return null;
+
+      final jsonData = json.decode(response.body);
+
+      if (jsonData['features'] == null || jsonData['features'].isEmpty) {
+        return null;
+      }
+
+      // Find the feature with matching CMS ID
+      for (final feature in jsonData['features']) {
+        final properties = feature['properties'];
+        final featureCmsId = properties?['cmsid']?.toString();
+
+        if (featureCmsId != cmsId) continue;
+
+        final geometry = feature['geometry'];
+        if (geometry == null || geometry['coordinates'] == null) continue;
+
+        final coordinatesList = geometry['coordinates'];
+        if (coordinatesList is! List || coordinatesList.isEmpty) continue;
+
+        final List<LatLng> coordinates = [];
+
+        // Iterate over the coordinate pairs in the LineString
+        for (final coordPair in coordinatesList) {
+          if (coordPair is List && coordPair.length >= 2) {
+            coordinates.add(
+              LatLng(
+                (coordPair[1] as num).toDouble(), // latitude
+                (coordPair[0] as num).toDouble(), // longitude
+              ),
+            );
+          }
+        }
+
+        return coordinates.isNotEmpty ? coordinates : null;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching route coordinates for $routeName: $e');
+      return null;
+    }
   }
 }
 

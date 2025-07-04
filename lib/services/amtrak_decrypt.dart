@@ -7,15 +7,35 @@ import 'package:http/http.dart' as http;
 import 'package:pointycastle/export.dart';
 
 class AmtrakDecrypt {
-  static const dataUrl =
+  static const trainsUrl =
       "https://maps.amtrak.com/services/MapDataService/trains/getTrainsData";
-  // static const dataUrl =
-  //     "https://maps.amtrak.com/services/MapDataService/stations/trainStations";
+  static const stationsUrl =
+      "https://maps.amtrak.com/services/MapDataService/stations/trainStations";
   static const routesUrl = "https://maps.amtrak.com/rttl/js/RoutesList.json";
   static const routesVUrl = "https://maps.amtrak.com/rttl/js/RoutesList.v.json";
   static const masterSegment = 88;
 
-  static Future<Map<String, String>> getEncryptionKeys() async {
+  static Uint8List _hexToBytes(String hex) {
+    final result = Uint8List(hex.length ~/ 2);
+    for (int i = 0; i < hex.length; i += 2) {
+      result[i ~/ 2] = int.parse(hex.substring(i, i + 2), radix: 16);
+    }
+    return result;
+  }
+
+  static Future<Map<String, dynamic>> getTrainData() async {
+    final encryptionParams = await _fetchEncryptionParameters();
+    final response = await http.get(Uri.parse(trainsUrl));
+    return _parseEncryptedResponse(response.body, encryptionParams);
+  }
+
+  static Future<Map<String, dynamic>> getStationData() async {
+    final encryptionParams = await _fetchEncryptionParameters();
+    final response = await http.get(Uri.parse(stationsUrl));
+    return _parseEncryptedResponse(response.body, encryptionParams);
+  }
+
+  static Future<Map<String, String>> _fetchEncryptionParameters() async {
     final routesResponse = await http.get(Uri.parse(routesUrl));
     final routesData = json.decode(routesResponse.body) as List;
 
@@ -36,7 +56,12 @@ class AmtrakDecrypt {
     };
   }
 
-  static String decrypt(String content, String key, String salt, String iv) {
+  static String _decryptContent(
+    String content,
+    String key,
+    String salt,
+    String iv,
+  ) {
     final ciphertext = base64.decode(content);
     final saltBytes = _hexToBytes(salt);
     final ivBytes = _hexToBytes(iv);
@@ -69,49 +94,35 @@ class AmtrakDecrypt {
     return utf8.decode(unpaddedData);
   }
 
-  static Map<String, dynamic> decryptData(
+  static Map<String, dynamic> _parseEncryptedResponse(
     String encryptedData,
-    Map<String, String> params,
+    Map<String, String> encryptionParams,
   ) {
     final contentHashLength = encryptedData.length - masterSegment;
     final contentHash = encryptedData.substring(0, contentHashLength);
     final privateKeyHash = encryptedData.substring(contentHashLength);
 
     // Decrypt private key and extract the key before "|"
-    final decryptedPrivateKey = decrypt(
+    final decryptedPrivateKey = _decryptContent(
       privateKeyHash,
-      params['public_key']!,
-      params['salt']!,
-      params['iv']!,
+      encryptionParams['public_key']!,
+      encryptionParams['salt']!,
+      encryptionParams['iv']!,
     );
     final privateKey = decryptedPrivateKey.split('|')[0];
 
     // Decrypt content using the private key
-    final decryptedContent = decrypt(
+    final decryptedContent = _decryptContent(
       contentHash,
       privateKey,
-      params['salt']!,
-      params['iv']!,
+      encryptionParams['salt']!,
+      encryptionParams['iv']!,
     );
     return json.decode(decryptedContent);
-  }
-
-  static Future<Map<String, dynamic>> fetchAndDecryptData() async {
-    final params = await getEncryptionKeys();
-    final response = await http.get(Uri.parse(dataUrl));
-    return decryptData(response.body, params);
-  }
-
-  static Uint8List _hexToBytes(String hex) {
-    final result = Uint8List(hex.length ~/ 2);
-    for (int i = 0; i < hex.length; i += 2) {
-      result[i ~/ 2] = int.parse(hex.substring(i, i + 2), radix: 16);
-    }
-    return result;
   }
 }
 
 // void main() async {
-//   final data = await AmtrakDecrypt.fetchAndDecryptData();
+//   final data = await AmtrakDecrypt.getTrainData();
 //   print(json.encode(data));
 // }

@@ -37,6 +37,8 @@ android {
         if (localPropertiesFile.exists()) {
             localPropertiesFile.inputStream().use { localProperties.load(it) }
         }
+
+        // Or use https://github.com/google/secrets-gradle-plugin
         
         manifestPlaceholders["googleMapsApiKey"] = localProperties.getProperty("googleMapsApiKey", "")
     }
