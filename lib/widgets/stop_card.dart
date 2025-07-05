@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models.dart';
+import '../models/status_models.dart';
 import '../utils.dart';
 
 class StopCard extends StatelessWidget {

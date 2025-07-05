@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../models.dart';
+import '../models/maps_models.dart';
 
 class MapWidget extends StatefulWidget {
   final TrainLocation trainLocation;
@@ -32,23 +32,25 @@ class _MapWidgetState extends State<MapWidget> {
     // Update markers and polylines if the train location has changed
     if (oldWidget.trainLocation.lat != widget.trainLocation.lat ||
         oldWidget.trainLocation.long != widget.trainLocation.long ||
-        oldWidget.trainLocation.speed != widget.trainLocation.speed ||
-        oldWidget.trainLocation.heading != widget.trainLocation.heading) {
+        oldWidget.trainLocation.speed != widget.trainLocation.speed) {
       _createMarkers();
       _createPolylines();
-
-      // Update camera position to new train location
-      _controller?.animateCamera(
-        CameraUpdate.newLatLng(
-          LatLng(widget.trainLocation.lat, widget.trainLocation.long),
-        ),
-      );
     }
+
+    // Update camera position to new train location
+    _controller?.animateCamera(
+      CameraUpdate.newLatLng(
+        LatLng(widget.trainLocation.lat, widget.trainLocation.long),
+      ),
+    );
   }
 
   void _createMarkers() {
     setState(() {
-      _markers = {
+      Set<Marker> markers = {};
+      
+      // Add train location marker
+      markers.add(
         Marker(
           markerId: const MarkerId('train'),
           position: LatLng(widget.trainLocation.lat, widget.trainLocation.long),
@@ -60,23 +62,55 @@ class _MapWidgetState extends State<MapWidget> {
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
-      };
+      );
+
+      // Add station markers
+      for (final station in widget.trainLocation.stations) {
+        if (station.coordinates != null) {
+          markers.add(
+            Marker(
+              markerId: MarkerId('station_${station.code}'),
+              position: LatLng(
+                station.coordinates!.latitude,
+                station.coordinates!.longitude,
+              ),
+              infoWindow: InfoWindow(
+                title: 'Station ${station.code}',
+                snippet: 'Train station',
+              ),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            ),
+          );
+        }
+      }
+
+      _markers = markers;
     });
   }
 
   void _createPolylines() {
     setState(() {
-      if (widget.trainLocation.routeCoordinates != null &&
-          widget.trainLocation.routeCoordinates!.isNotEmpty) {
-        _polylines = {
-          Polyline(
-            polylineId: const PolylineId('route'),
-            points: widget.trainLocation.routeCoordinates!,
-            color: Colors.blue,
-            width: 3,
-            patterns: [],
-          ),
-        };
+      if (widget.trainLocation.route != null &&
+          widget.trainLocation.route!.paths.isNotEmpty) {
+        Set<Polyline> polylines = {};
+
+        // Create a polyline for each path in the TrainRoute
+        for (int i = 0; i < widget.trainLocation.route!.paths.length; i++) {
+          debugPrint('Path index: $i');
+          final path = widget.trainLocation.route!.paths[i];
+          if (path.isNotEmpty) {
+            polylines.add(
+              Polyline(
+                polylineId: PolylineId('route_$i'),
+                points: path,
+                color: Colors.blue,
+                width: 4,
+                patterns: [],
+              ),
+            );
+          }
+        }
+        _polylines = polylines;
       } else {
         _polylines = {};
       }

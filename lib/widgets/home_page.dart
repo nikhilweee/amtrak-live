@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models.dart';
+import '../models/maps_models.dart';
+import '../models/status_models.dart';
+import '../models/search_models.dart';
 import '../services/recent_service.dart';
 import '../services/search_service.dart';
 import 'search_form.dart';

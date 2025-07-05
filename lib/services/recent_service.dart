@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../models.dart';
+import '../models/search_models.dart';
 
 class RecentService {
   static const String _key = 'recent_searches';

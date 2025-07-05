@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models.dart';
+import '../models/maps_models.dart';
+import '../models/status_models.dart';
 import 'train_card.dart';
 import 'stop_card.dart';
 import 'map_widget.dart';

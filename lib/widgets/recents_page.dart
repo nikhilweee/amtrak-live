@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models.dart';
+import '../models/search_models.dart';
 import '../services/recent_service.dart';
 
 class RecentsPage extends StatefulWidget {
