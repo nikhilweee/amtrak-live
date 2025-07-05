@@ -48,7 +48,7 @@ class _MapWidgetState extends State<MapWidget> {
   void _createMarkers() {
     setState(() {
       Set<Marker> markers = {};
-      
+
       // Add train location marker
       markers.add(
         Marker(
@@ -78,7 +78,9 @@ class _MapWidgetState extends State<MapWidget> {
                 title: 'Station ${station.code}',
                 snippet: 'Train station',
               ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueGreen,
+              ),
             ),
           );
         }
@@ -90,19 +92,18 @@ class _MapWidgetState extends State<MapWidget> {
 
   void _createPolylines() {
     setState(() {
-      if (widget.trainLocation.route != null &&
-          widget.trainLocation.route!.paths.isNotEmpty) {
+      if (widget.trainLocation.paths.isNotEmpty) {
         Set<Polyline> polylines = {};
 
-        // Create a polyline for each path in the TrainRoute
-        for (int i = 0; i < widget.trainLocation.route!.paths.length; i++) {
+        // Create a polyline for each path in the TrainLocation
+        for (int i = 0; i < widget.trainLocation.paths.length; i++) {
           debugPrint('Path index: $i');
-          final path = widget.trainLocation.route!.paths[i];
-          if (path.isNotEmpty) {
+          final path = widget.trainLocation.paths[i];
+          if (path.coordinates.isNotEmpty) {
             polylines.add(
               Polyline(
                 polylineId: PolylineId('route_$i'),
-                points: path,
+                points: path.coordinates,
                 color: Colors.blue,
                 width: 4,
                 patterns: [],

@@ -62,15 +62,14 @@ class SearchService {
     // Get station coordinates for the train's stations
     final stationsWithCoordinates = await _fetchTrainStations(trainLocation);
 
-    // Create a TrainRoute object with the fetched paths
-    final trainRoute = TrainRoute(
-      cmsId: trainLocation.cmsId,
-      paths: routePaths,
-    );
+    // Create TrainPath objects from the fetched paths
+    final trainPaths = routePaths
+        .map((path) => TrainPath(coordinates: path))
+        .toList();
 
-    // Return a new TrainLocation with route coordinates and updated stations
+    // Return a new TrainLocation with paths and updated stations
     return trainLocation.copyWith(
-      route: trainRoute,
+      paths: trainPaths,
       stations: stationsWithCoordinates,
     );
   }
@@ -137,6 +136,7 @@ class SearchService {
         heading: properties['Heading']?.toString() ?? 'Unknown',
         cmsId: properties['CMSID']?.toString() ?? '',
         routeName: properties['RouteName']?.toString() ?? '',
+        paths: [], // Empty paths initially, will be populated later
         stations: stationCodes,
       );
     }
@@ -243,9 +243,9 @@ class SearchService {
       final List<TrainStation> updatedStations = [];
       for (final station in trainLocation.stations) {
         if (stationMap.containsKey(station.code)) {
-          updatedStations.add(station.copyWith(
-            coordinates: stationMap[station.code],
-          ));
+          updatedStations.add(
+            station.copyWith(coordinates: stationMap[station.code]),
+          );
         } else {
           // Keep original station data if no coordinates found
           updatedStations.add(station);

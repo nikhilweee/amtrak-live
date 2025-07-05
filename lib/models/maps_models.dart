@@ -1,20 +1,13 @@
 // Amtrak Maps API Models
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class TrainRoute {
-  final String cmsId;
-  final List<List<LatLng>> paths;
+class TrainPath {
+  final List<LatLng> coordinates;
 
-  const TrainRoute({required this.cmsId, required this.paths});
+  const TrainPath({required this.coordinates});
 
-  TrainRoute copyWith({
-    String? cmsId,
-    List<List<LatLng>>? paths,
-  }) {
-    return TrainRoute(
-      cmsId: cmsId ?? this.cmsId,
-      paths: paths ?? this.paths,
-    );
+  TrainPath copyWith({List<LatLng>? coordinates}) {
+    return TrainPath(coordinates: coordinates ?? this.coordinates);
   }
 }
 
@@ -39,7 +32,7 @@ class TrainLocation {
   final String heading;
   final String cmsId;
   final String routeName;
-  final TrainRoute? route;
+  final List<TrainPath> paths;
   final List<TrainStation> stations;
 
   const TrainLocation({
@@ -49,12 +42,12 @@ class TrainLocation {
     required this.heading,
     required this.cmsId,
     required this.routeName,
+    required this.paths,
     required this.stations,
-    this.route,
   });
 
   TrainLocation copyWith({
-    TrainRoute? route,
+    List<TrainPath>? paths,
     List<TrainStation>? stations,
   }) {
     return TrainLocation(
@@ -64,7 +57,7 @@ class TrainLocation {
       heading: heading,
       cmsId: cmsId,
       routeName: routeName,
-      route: route ?? this.route,
+      paths: paths ?? this.paths,
       stations: stations ?? this.stations,
     );
   }
