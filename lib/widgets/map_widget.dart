@@ -140,11 +140,11 @@ class _MapWidgetState extends State<MapWidget> {
         polylines: _polylines,
         mapType: MapType.normal,
         zoomGesturesEnabled: true,
+        zoomControlsEnabled: true,
         scrollGesturesEnabled: true,
         myLocationEnabled: false,
         myLocationButtonEnabled: false,
         compassEnabled: false,
-        zoomControlsEnabled: false,
         rotateGesturesEnabled: false,
         tiltGesturesEnabled: false,
         gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
