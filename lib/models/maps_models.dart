@@ -14,13 +14,26 @@ class TrainPath {
 class TrainStation {
   final String code;
   final LatLng? coordinates;
+  final String? stationName;
+  final int? stopNumber;
 
-  const TrainStation({required this.code, this.coordinates});
+  const TrainStation({
+    required this.code,
+    this.coordinates,
+    this.stationName,
+    this.stopNumber,
+  });
 
-  TrainStation copyWith({LatLng? coordinates}) {
+  TrainStation copyWith({
+    LatLng? coordinates,
+    String? stationName,
+    int? stopNumber,
+  }) {
     return TrainStation(
       code: code,
       coordinates: coordinates ?? this.coordinates,
+      stationName: stationName ?? this.stationName,
+      stopNumber: stopNumber ?? this.stopNumber,
     );
   }
 }

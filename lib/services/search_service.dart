@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
@@ -8,11 +10,43 @@ import '../models/status_models.dart';
 import 'amtrak_decrypt.dart';
 
 class SearchService {
+  /// Refresh station and route cache if needed (call on app startup)
+  static Future<void> refreshCacheIfNeeded() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final stationFile = File('${dir.path}/stations.json');
+    final routesFile = File('${dir.path}/routes.json');
+
+    Future<bool> needsRefresh(File file) async {
+      if (!await file.exists()) return true;
+      final lastMod = await file.lastModified();
+      return DateTime.now().difference(lastMod) > Duration(hours: 24);
+    }
+
+    debugPrint("Checking for JSON Assets");
+
+    if (await needsRefresh(stationFile)) {
+      debugPrint("fetching stations.json");
+      final data = await AmtrakDecrypt.getStationData();
+      await stationFile.writeAsString(json.encode(data));
+    }
+
+    if (await needsRefresh(routesFile)) {
+      debugPrint("fetching routes.json");
+      final uri = Uri.parse(
+        'https://maps.amtrak.com/services/MapDataService/stations/nationalRoute',
+      );
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        await routesFile.writeAsString(response.body);
+      }
+    }
+  }
+
   static const String _baseUrl = 'www.amtrak.com';
   static const String _referer =
       'https://www.amtrak.com/tickets/train-status.html';
 
-  /// Search for train data by train number and date
+  // Search for train data by train number and date
   static Future<SearchResult> searchTrain(
     String trainNumber,
     DateTime date,
@@ -43,7 +77,7 @@ class SearchService {
     }
   }
 
-  /// Get train location and its route coordinates for a specific train number and date
+  // Get train location and its route coordinates for a specific train number and date
   static Future<TrainLocation?> searchRoute(
     String trainNumber,
     DateTime date,
@@ -55,7 +89,6 @@ class SearchService {
     // Then get the route coordinates using the train's CMS ID and route name
     final routePaths = await _fetchTrainRoute(
       trainLocation.routeName,
-      trainLocation.cmsId,
     );
     if (routePaths == null || routePaths.isEmpty) return null;
 
@@ -74,7 +107,7 @@ class SearchService {
     );
   }
 
-  /// Get real-time train location for a specific train number and date from Amtrak
+  // Get real-time train location for a specific train number and date from Amtrak
   static Future<TrainLocation?> _fetchTrainLocation(
     String trainNumber,
     DateTime date,
@@ -144,21 +177,16 @@ class SearchService {
     return null;
   }
 
-  /// Get route coordinates for a specific route name
+  // Get route coordinates for a specific route name
   static Future<List<List<LatLng>>?> _fetchTrainRoute(
     String routeName,
-    String cmsId,
   ) async {
     try {
-      final uri = Uri.parse(
-        'https://maps.amtrak.com/services/MapDataService/stations/nationalRoute',
-      ).replace(queryParameters: {'routeName': routeName});
-
-      final response = await http.get(uri);
-
-      if (response.statusCode != 200) return null;
-
-      final jsonData = json.decode(response.body);
+      final dir = await getApplicationDocumentsDirectory();
+      final routesFile = File('${dir.path}/routes.json');
+      if (!await routesFile.exists()) return null;
+      final jsonStr = await routesFile.readAsString();
+      final jsonData = json.decode(jsonStr);
 
       if (jsonData['features'] == null || jsonData['features'].isEmpty) {
         return null;
@@ -166,30 +194,45 @@ class SearchService {
 
       final List<List<LatLng>> allPaths = [];
 
-      // Collect paths from all features (no CMS ID filtering)
       for (final feature in jsonData['features']) {
+        final name = feature['properties']?['name'] ?? '';
+        if (!name.contains(routeName)) continue;
         final geometry = feature['geometry'];
-        if (geometry == null || geometry['coordinates'] == null) continue;
+        if (geometry == null) continue;
+        final type = geometry['type'];
+        final coords = geometry['coordinates'];
+        if (coords == null || coords is! List || coords.isEmpty) continue;
 
-        final coordinatesList = geometry['coordinates'];
-        if (coordinatesList is! List || coordinatesList.isEmpty) continue;
+        if (type == 'MultiLineString') {
+          for (final line in coords) {
+            if (line == null || line is! List || line.isEmpty) continue;
+            final coordinates = <LatLng>[];
+            for (final coordPair in line) {
+              if (coordPair is! List || coordPair.length < 2) continue;
+              coordinates.add(
+                LatLng(
+                  (coordPair[1] as num).toDouble(),
+                  (coordPair[0] as num).toDouble(),
+                ),
+              );
+            }
+            if (coordinates.isNotEmpty) allPaths.add(coordinates);
+          }
+          continue;
+        }
 
-        final List<LatLng> coordinates = [];
-
-        // Iterate over the coordinate pairs in the LineString
-        for (final coordPair in coordinatesList) {
-          if (coordPair is List && coordPair.length >= 2) {
+        if (type == 'LineString') {
+          final coordinates = <LatLng>[];
+          for (final coordPair in coords) {
+            if (coordPair is! List || coordPair.length < 2) continue;
             coordinates.add(
               LatLng(
-                (coordPair[1] as num).toDouble(), // latitude
-                (coordPair[0] as num).toDouble(), // longitude
+                (coordPair[1] as num).toDouble(),
+                (coordPair[0] as num).toDouble(),
               ),
             );
           }
-        }
-
-        if (coordinates.isNotEmpty) {
-          allPaths.add(coordinates);
+          if (coordinates.isNotEmpty) allPaths.add(coordinates);
         }
       }
 
@@ -197,24 +240,28 @@ class SearchService {
 
       return allPaths.isNotEmpty ? allPaths : null;
     } catch (e) {
-      debugPrint('Error fetching route coordinates for $routeName: $e');
+      debugPrint('Error reading cached routes: $e');
       return null;
     }
   }
 
-  /// Get station coordinates for all stations from Amtrak station data
+  // Get station coordinates for all stations from Amtrak station data
   static Future<List<TrainStation>> _fetchTrainStations(
     TrainLocation trainLocation,
   ) async {
     try {
-      final data = await AmtrakDecrypt.getStationData();
+      final dir = await getApplicationDocumentsDirectory();
+      final stationFile = File('${dir.path}/stations.json');
+      if (!await stationFile.exists()) return trainLocation.stations;
+      final jsonStr = await stationFile.readAsString();
+      final data = json.decode(jsonStr);
 
       if (data['StationsDataResponse'] == null ||
           data['StationsDataResponse']['features'] == null) {
         return trainLocation.stations;
       }
 
-      final Map<String, LatLng> stationMap = {};
+      final Map<String, Map<String, dynamic>> stationInfoMap = {};
       final features = data['StationsDataResponse']['features'] as List;
 
       for (final feature in features) {
@@ -231,36 +278,47 @@ class SearchService {
         final coordinates = geometry['coordinates'];
         if (coordinates == null || coordinates.length < 2) continue;
 
-        stationMap[stationCode] = LatLng(
+        final LatLng latLng = LatLng(
           (coordinates[1] as num).toDouble(), // latitude
           (coordinates[0] as num).toDouble(), // longitude
         );
+        final String? stationName = properties['StationName']?.toString();
+
+        stationInfoMap[stationCode] = {
+          'coordinates': latLng,
+          'stationName': stationName,
+        };
       }
 
-      debugPrint('Loaded ${stationMap.length} station coordinates');
+      debugPrint('Loaded ${stationInfoMap.length} station coordinates');
 
-      // Update the train location stations with coordinates
       final List<TrainStation> updatedStations = [];
-      for (final station in trainLocation.stations) {
-        if (stationMap.containsKey(station.code)) {
+      for (int i = 0; i < trainLocation.stations.length; i++) {
+        final station = trainLocation.stations[i];
+        final stopNumber = i + 1;
+        if (stationInfoMap.containsKey(station.code)) {
+          final info = stationInfoMap[station.code]!;
           updatedStations.add(
-            station.copyWith(coordinates: stationMap[station.code]),
+            station.copyWith(
+              coordinates: info['coordinates'] as LatLng?,
+              stationName: info['stationName'] as String?,
+              stopNumber: stopNumber,
+            ),
           );
         } else {
-          // Keep original station data if no coordinates found
-          updatedStations.add(station);
+          updatedStations.add(station.copyWith(stopNumber: stopNumber));
         }
       }
 
       return updatedStations;
     } catch (e) {
-      debugPrint('Error fetching station data: $e');
+      debugPrint('Error reading cached station data: $e');
       return trainLocation.stations;
     }
   }
 }
 
-/// Result wrapper for search operations
+// Result wrapper for search operations
 class SearchResult {
   final TrainData? data;
   final String? error;
