@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:widget_to_marker/widget_to_marker.dart';
+
+import '../services/preload_service.dart';
 import '../models/maps_models.dart';
 
 class MapWidget extends StatefulWidget {
@@ -18,69 +19,13 @@ class _MapWidgetState extends State<MapWidget> {
   GoogleMapController? _controller;
   Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
-  BitmapDescriptor? _trainMarkerIcon;
-  final Map<int, BitmapDescriptor> _stationNumberMarkerCache = {};
-  bool _iconsReady = false;
+  // Use PreloadService for marker icons
 
   @override
   void initState() {
     super.initState();
-    _prepareMarkerIcons();
-    _createPolylines();
-  }
-
-  Future<BitmapDescriptor> _createCustomMarker(
-    IconData icon,
-    double size, {
-    Color backgroundColor = Colors.red,
-  }) async {
-    return await Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
-      child: Icon(icon, color: Colors.white, size: size * 0.70),
-    ).toBitmapDescriptor(
-      logicalSize: Size(size, size),
-      imageSize: Size(size, size),
-    );
-  }
-
-  Future<BitmapDescriptor> _createNumberMarker(
-    int number,
-    double size, {
-    Color backgroundColor = Colors.red,
-  }) async {
-    return await Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
-      child: Text(
-        number.toString(),
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: size * 0.5,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ).toBitmapDescriptor(
-      logicalSize: Size(size, size),
-      imageSize: Size(size, size),
-    );
-  }
-
-  Future<void> _prepareMarkerIcons() async {
-    final trainIcon = await _createCustomMarker(
-      Icons.train,
-      64,
-      backgroundColor: Colors.black,
-    );
-    setState(() {
-      _trainMarkerIcon = trainIcon;
-      _iconsReady = true;
-    });
     _createMarkers();
+    _createPolylines();
   }
 
   @override
@@ -104,10 +49,12 @@ class _MapWidgetState extends State<MapWidget> {
   }
 
   void _createMarkers() async {
-    if (!_iconsReady) return;
     Set<Marker> markers = {};
 
     // Add train location marker with high zIndexInt
+    final trainIcon =
+        PreloadService().getTrainMarkerIcon() ??
+        BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
     markers.add(
       Marker(
         markerId: const MarkerId('train'),
@@ -118,41 +65,32 @@ class _MapWidgetState extends State<MapWidget> {
               'Heading ${widget.trainLocation.heading} at '
               '${widget.trainLocation.speed.toStringAsFixed(0)} mph',
         ),
-        icon:
-            _trainMarkerIcon ??
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        icon: trainIcon,
         zIndexInt: 100,
       ),
     );
 
     // Add station markers with stop number as icon, lower zIndexInt
     for (final station in widget.trainLocation.stations) {
-      if (station.coordinates != null && station.stopNumber != null) {
-        BitmapDescriptor? markerIcon =
-            _stationNumberMarkerCache[station.stopNumber!];
-        if (markerIcon == null) {
-          markerIcon = await _createNumberMarker(
-            station.stopNumber!,
-            64,
-            backgroundColor: Colors.red,
+      if (station.coordinates != null) {
+        BitmapDescriptor? markerIcon = PreloadService().getStationMarker();
+        if (markerIcon != null) {
+          markers.add(
+            Marker(
+              markerId: MarkerId('station_${station.code}'),
+              position: LatLng(
+                station.coordinates!.latitude,
+                station.coordinates!.longitude,
+              ),
+              infoWindow: InfoWindow(
+                title: 'Stop ${station.stopNumber}: ${station.code}',
+                snippet: station.stationName ?? 'Train station',
+              ),
+              icon: markerIcon,
+              zIndexInt: 1,
+            ),
           );
-          _stationNumberMarkerCache[station.stopNumber!] = markerIcon;
         }
-        markers.add(
-          Marker(
-            markerId: MarkerId('station_${station.code}'),
-            position: LatLng(
-              station.coordinates!.latitude,
-              station.coordinates!.longitude,
-            ),
-            infoWindow: InfoWindow(
-              title: 'Stop ${station.stopNumber}: ${station.code}',
-              snippet: station.stationName ?? 'Train station',
-            ),
-            icon: markerIcon,
-            zIndexInt: 1,
-          ),
-        );
       }
     }
 

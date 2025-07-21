@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'widgets/home_page.dart';
-import 'services/search_service.dart';
+import 'services/preload_service.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  tz.initializeTimeZones();
-  // Preload and refresh station/route cache
-  await SearchService.refreshCacheIfNeeded();
+  PreloadService().preloadAll(); // fire-and-forget, non-blocking
   runApp(const AmtrakLiveApp());
 }
 

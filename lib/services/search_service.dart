@@ -10,37 +10,7 @@ import '../models/status_models.dart';
 import 'amtrak_decrypt.dart';
 
 class SearchService {
-  /// Refresh station and route cache if needed (call on app startup)
-  static Future<void> refreshCacheIfNeeded() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final stationFile = File('${dir.path}/stations.json');
-    final routesFile = File('${dir.path}/routes.json');
-
-    Future<bool> needsRefresh(File file) async {
-      if (!await file.exists()) return true;
-      final lastMod = await file.lastModified();
-      return DateTime.now().difference(lastMod) > Duration(hours: 24);
-    }
-
-    debugPrint("Checking for JSON Assets");
-
-    if (await needsRefresh(stationFile)) {
-      debugPrint("fetching stations.json");
-      final data = await AmtrakDecrypt.getStationData();
-      await stationFile.writeAsString(json.encode(data));
-    }
-
-    if (await needsRefresh(routesFile)) {
-      debugPrint("fetching routes.json");
-      final uri = Uri.parse(
-        'https://maps.amtrak.com/services/MapDataService/stations/nationalRoute',
-      );
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        await routesFile.writeAsString(response.body);
-      }
-    }
-  }
+  // (Preloading and cache refresh logic moved to PreloadService)
 
   static const String _baseUrl = 'www.amtrak.com';
   static const String _referer =
